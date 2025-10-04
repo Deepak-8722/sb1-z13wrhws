@@ -1,15 +1,14 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Building, BuildingCategory } from './types/campus';
 import { buildings } from './data/buildings';
 import { useFavorites } from './hooks/useFavorites';
 import SearchBar from './components/SearchBar';
-import GoogleMap from './components/GoogleMap';
 import BuildingCard from './components/BuildingCard';
 import BuildingDetail from './components/BuildingDetail';
 import EmergencyServices from './components/EmergencyServices';
 import EventsCatalogue from './components/EventsCatalogue';
 import ChatBot from './components/ChatBot';
-import { MapPin, Heart, Info, Menu, X, Calendar, MessageCircle, Locate } from 'lucide-react';
+import { MapPin, Heart, Info, Menu, X, Calendar, MessageCircle } from 'lucide-react';
 
 function App() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -21,65 +20,8 @@ function App() {
   const [showEvents, setShowEvents] = useState(false);
   const [showChatBot, setShowChatBot] = useState(false);
   const [directionsTarget, setDirectionsTarget] = useState<string | null>(null);
-  const [showUserLocation, setShowUserLocation] = useState(false);
-  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [geolocationError, setGeolocationError] = useState<string | null>(null);
-  
+
   const { favorites, toggleFavorite, isFavorite } = useFavorites();
-
-  // Handle geolocation
-  useEffect(() => {
-    let watchId: number | null = null;
-
-    if (showUserLocation) {
-      if (!navigator.geolocation) {
-        setGeolocationError('Geolocation is not supported by this browser');
-        return;
-      }
-
-      const options = {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 60000
-      };
-
-      const handleSuccess = (position: GeolocationPosition) => {
-        setUserLocation({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude
-        });
-        setGeolocationError(null);
-      };
-
-      const handleError = (error: GeolocationPositionError) => {
-        let errorMessage = 'Unable to get your location';
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            errorMessage = 'Location access denied by user';
-            break;
-          case error.POSITION_UNAVAILABLE:
-            errorMessage = 'Location information unavailable';
-            break;
-          case error.TIMEOUT:
-            errorMessage = 'Location request timed out';
-            break;
-        }
-        setGeolocationError(errorMessage);
-        setUserLocation(null);
-      };
-
-      watchId = navigator.geolocation.watchPosition(handleSuccess, handleError, options);
-    } else {
-      setUserLocation(null);
-      setGeolocationError(null);
-    }
-
-    return () => {
-      if (watchId !== null) {
-        navigator.geolocation.clearWatch(watchId);
-      }
-    };
-  }, [showUserLocation]);
 
   const filteredBuildings = useMemo(() => {
     return buildings.filter(building => {
@@ -134,19 +76,6 @@ function App() {
     <div className="min-h-screen bg-gray-50">
       {/* Floating Action Buttons */}
       <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-40">
-        <button
-          onClick={() => setShowUserLocation(!showUserLocation)}
-          className={`w-14 h-14 ${
-            showUserLocation 
-              ? 'bg-gradient-to-r from-green-600 to-emerald-600' 
-              : 'bg-gradient-to-r from-gray-600 to-gray-700'
-          } text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group hover:scale-110 ${
-            showUserLocation ? 'animate-pulse' : ''
-          }`}
-          title={showUserLocation ? 'Hide My Location' : 'Show My Location'}
-        >
-          <Locate className="h-6 w-6" />
-        </button>
         <button
           onClick={() => setShowEvents(true)}
           className="w-14 h-14 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group hover:scale-110"
@@ -271,16 +200,27 @@ function App() {
         {activeTab === 'map' && (
           <div className="grid lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
-              <EmbeddedMap
-                buildings={filteredBuildings}
-                selectedBuilding={selectedBuilding}
-                onBuildingSelect={(building) => {
-                  setSelectedBuilding(building);
-                  setDetailBuilding(building);
-                }}
-                showUserLocation={showUserLocation}
-                userLocation={userLocation}
-              />
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-xl font-semibold text-gray-800">Campus Map</h3>
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <MapPin className="h-4 w-4" />
+                    <span>Interactive View</span>
+                  </div>
+                </div>
+                <div className="w-full h-[400px] md:h-[500px] rounded-lg border border-gray-200 overflow-hidden">
+                  <iframe
+                    src="https://www.google.com/maps/d/embed?mid=1zwvY4POOQo_YR04XYS4myWMuzKYTxVE&ehbc=2E312F&noprof=1"
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    allowFullScreen
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    title="Campus Map"
+                  />
+                </div>
+              </div>
             </div>
             <div className="space-y-6">
               <div className="bg-white rounded-xl shadow-lg p-6">

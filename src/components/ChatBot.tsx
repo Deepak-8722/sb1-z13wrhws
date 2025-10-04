@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { ChatMessage } from '../types/events';
-import { X, Send, Bot, User, MessageCircle } from 'lucide-react';
+import { X, Send, Bot, User } from 'lucide-react';
 
 interface ChatBotProps {
   onClose: () => void;

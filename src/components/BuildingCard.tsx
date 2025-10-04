@@ -1,6 +1,5 @@
-import React from 'react';
 import { Building } from '../types/campus';
-import { Clock, Phone, Mail, MapPin, Heart, Star } from 'lucide-react';
+import { Clock, Phone, Mail, MapPin, Heart } from 'lucide-react';
 
 interface BuildingCardProps {
   building: Building;

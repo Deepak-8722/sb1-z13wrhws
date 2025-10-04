@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Loader } from '@googlemaps/js-api-loader';
 import { Building } from '../types/campus';
-import { MapPin, Navigation, Locate, AlertCircle } from 'lucide-react';
+import { MapPin, AlertCircle } from 'lucide-react';
 
 interface GoogleMapProps {
   buildings: Building[];
@@ -55,20 +55,14 @@ export default function GoogleMap({
           libraries: ['places']
         });
 
-        await loader.load();
+        // Load the Google Maps API
+        await (loader as any).load();
 
-        if (mapRef.current) {
-          const mapInstance = new google.maps.Map(mapRef.current, {
+        if (mapRef.current && window.google) {
+          const mapInstance = new window.google.maps.Map(mapRef.current, {
             center: CAMPUS_CENTER,
             zoom: 16,
-            mapTypeId: google.maps.MapTypeId.ROADMAP,
-            styles: [
-              {
-                featureType: 'poi.school',
-                elementType: 'geometry',
-                stylers: [{ color: '#E3F2FD' }]
-              }
-            ]
+            mapTypeId: window.google.maps.MapTypeId.ROADMAP
           });
 
           setMap(mapInstance);
@@ -91,7 +85,7 @@ export default function GoogleMap({
     // Clear existing markers
     markers.forEach(marker => marker.setMap(null));
 
-    const newMarkers = buildings.map((building, index) => {
+    const newMarkers = buildings.map((building) => {
       // Convert building coordinates to lat/lng (adjust these calculations for your campus)
       const lat = CAMPUS_CENTER.lat + (building.coordinates.y - 250) * 0.0001;
       const lng = CAMPUS_CENTER.lng + (building.coordinates.x - 300) * 0.0001;
@@ -168,7 +162,7 @@ export default function GoogleMap({
       });
 
       // Add a pulsing circle around user location
-      const pulseCircle = new google.maps.Circle({
+      new google.maps.Circle({
         strokeColor: '#3B82F6',
         strokeOpacity: 0.8,
         strokeWeight: 2,

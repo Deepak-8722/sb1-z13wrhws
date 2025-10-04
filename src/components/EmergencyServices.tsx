@@ -1,4 +1,3 @@
-import React from 'react';
 import { campusServices } from '../data/buildings';
 import { AlertTriangle, Phone, Clock, MapPin } from 'lucide-react';
 

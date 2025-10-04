@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Building } from '../types/campus';
 import { MapPin, Navigation, Zap } from 'lucide-react';
 

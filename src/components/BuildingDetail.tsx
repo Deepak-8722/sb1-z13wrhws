@@ -1,4 +1,3 @@
-import React from 'react';
 import { Building } from '../types/campus';
 import { X, Clock, Phone, Mail, MapPin, Navigation, Heart } from 'lucide-react';
 

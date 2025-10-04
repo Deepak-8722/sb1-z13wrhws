@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { CampusEvent, EventCategory } from '../types/events';
 import { campusEvents } from '../data/events';
 import { Calendar, Clock, MapPin, Users, Tag, X, Filter, Search, Navigation } from 'lucide-react';

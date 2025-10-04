@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
 import { Building } from '../types/campus';
-import { MapPin, Navigation, Locate, AlertCircle } from 'lucide-react';
+import { MapPin, Locate } from 'lucide-react';
 
 interface EmbeddedMapProps {
   buildings: Building[];
@@ -52,8 +51,6 @@ export default function EmbeddedMap({
   showUserLocation,
   userLocation 
 }: EmbeddedMapProps) {
-  const [hoveredBuilding, setHoveredBuilding] = useState<Building | null>(null);
-
   return (
     <div className="bg-white rounded-xl shadow-lg p-6">
       <div className="flex justify-between items-center mb-4">
@@ -87,8 +84,6 @@ export default function EmbeddedMap({
               <button
                 key={building.id}
                 onClick={() => onBuildingSelect(building)}
-                onMouseEnter={() => setHoveredBuilding(building)}
-                onMouseLeave={() => setHoveredBuilding(null)}
                 className={`w-full text-left px-2 py-1 rounded text-xs transition-colors ${
                   selectedBuilding?.id === building.id
                     ? 'bg-blue-100 text-blue-800'
