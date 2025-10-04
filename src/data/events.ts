@@ -1,6 +1,6 @@
 import { CampusEvent } from '../types/events';
 
-export const campusEvents: CampusEvent[] = [
+let campusEvents: CampusEvent[] = [
   {
     id: '1',
     name: 'Welcome Week Orientation',
@@ -134,3 +134,20 @@ export const campusEvents: CampusEvent[] = [
     tags: ['study-abroad', 'international', 'education']
   }
 ];
+
+export { campusEvents };
+
+// Admin functions to modify events
+export const addEvent = (event: CampusEvent) => {
+  campusEvents = [...campusEvents, event];
+};
+
+export const updateEvent = (updatedEvent: CampusEvent) => {
+  campusEvents = campusEvents.map(event => 
+    event.id === updatedEvent.id ? updatedEvent : event
+  );
+};
+
+export const deleteEvent = (eventId: string) => {
+  campusEvents = campusEvents.filter(event => event.id !== eventId);
+};

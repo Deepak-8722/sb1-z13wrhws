@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 export function useFavorites() {
   const [favorites, setFavorites] = useState<string[]>([]);
@@ -10,18 +10,18 @@ export function useFavorites() {
     }
   }, []);
 
-  const toggleFavorite = (buildingId: string) => {
+  const toggleFavorite = useCallback((buildingId: string) => {
     setFavorites(prev => {
       const updated = prev.includes(buildingId)
         ? prev.filter(id => id !== buildingId)
         : [...prev, buildingId];
-      
+
       localStorage.setItem('campus-favorites', JSON.stringify(updated));
       return updated;
     });
-  };
+  }, []);
 
-  const isFavorite = (buildingId: string) => favorites.includes(buildingId);
+  const isFavorite = useCallback((buildingId: string) => favorites.includes(buildingId), [favorites]);
 
   return { favorites, toggleFavorite, isFavorite };
 }

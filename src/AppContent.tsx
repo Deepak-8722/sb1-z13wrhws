@@ -3,32 +3,31 @@ import { Building, BuildingCategory } from './types/campus';
 import { buildings } from './data/buildings';
 import { useFavorites } from './hooks/useFavorites';
 import SearchBar from './components/SearchBar';
+import EmbeddedMap from './components/EmbeddedMap';
 import BuildingCard from './components/BuildingCard';
 import BuildingDetail from './components/BuildingDetail';
 import EmergencyServices from './components/EmergencyServices';
 import EventsCatalogue from './components/EventsCatalogue';
 import ChatBot from './components/ChatBot';
-import EmbeddedMap from './components/EmbeddedMap';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import ErrorBoundary from './components/ErrorBoundary';
+import { MapPin, Heart, Info, Menu, X, Calendar, MessageCircle, Locate, UserCog } from 'lucide-react';
+import { useAuth } from './contexts/AuthContext';
 import AdminLogin from './components/AdminLogin';
 import BuildingManagement from './components/BuildingManagement';
 import ProtectedRoute from './components/ProtectedRoute';
-import { MapPin, Heart, Info, Menu, X, Calendar, Locate, UserCog } from 'lucide-react';
 
 function AppContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<BuildingCategory | 'all'>('all');
   const [detailBuilding, setDetailBuilding] = useState<Building | null>(null);
-  const [selectedBuilding, setSelectedBuilding] = useState<Building | null>(null);
   const [activeTab, setActiveTab] = useState<'map' | 'list' | 'services'>('map');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showEvents, setShowEvents] = useState(false);
   const [showChatBot, setShowChatBot] = useState(false);
+  const [showUserLocation, setShowUserLocation] = useState(false);
+  const [geolocationError, setGeolocationError] = useState<string | null>(null);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [showBuildingManagement, setShowBuildingManagement] = useState(false);
-  const [showUserLocation, setShowUserLocation] = useState(false);
-  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-
   
   const { favorites, toggleFavorite, isFavorite } = useFavorites();
   const { isAdmin } = useAuth();
@@ -39,6 +38,7 @@ function AppContent() {
 
     if (showUserLocation) {
       if (!navigator.geolocation) {
+        setGeolocationError('Geolocation is not supported by this browser');
         return;
       }
 
@@ -48,20 +48,30 @@ function AppContent() {
         maximumAge: 60000
       };
 
-      const handleSuccess = (position: GeolocationPosition) => {
-        setUserLocation({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude
-        });
+      const handleSuccess = () => {
+        setGeolocationError(null);
       };
 
-      const handleError = () => {
-        setUserLocation(null);
+      const handleError = (error: GeolocationPositionError) => {
+        let errorMessage = 'Unable to get your location';
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = 'Location access denied by user';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = 'Location information unavailable';
+            break;
+          case error.TIMEOUT:
+            errorMessage = 'Location request timed out';
+            break;
+        }
+        setGeolocationError(errorMessage);
       };
 
       watchId = navigator.geolocation.watchPosition(handleSuccess, handleError, options);
     } else {
-      setUserLocation(null);
+      // setUserLocation(null);
+      setGeolocationError(null);
     }
 
     return () => {
@@ -117,9 +127,29 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Floating Action Buttons */}
-      <div className="fixed top-1/3 right-6 flex flex-col gap-3 z-40">
+      {!showEvents && (
+        <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-40">
+          {/* Chat Assistant Button - stays in original position */}
+          <button
+            onClick={() => setShowChatBot(true)}
+            className="w-14 h-14 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group hover:scale-110"
+            title="Chat Assistant"
+          >
+            <MessageCircle className="h-6 w-6" />
+          </button>
+        </div>
+      )}
+
+      {/* Location and Events Buttons - moved up and to right middle */}
+      <div className="fixed top-24 right-6 flex flex-col gap-3 z-40">
         <button
-          onClick={() => setShowUserLocation(!showUserLocation)}
+          onClick={() => {
+            if (geolocationError) {
+              alert(geolocationError);
+              return;
+            }
+            setShowUserLocation(!showUserLocation);
+          }}
           className={`w-14 h-14 ${
             showUserLocation 
               ? 'bg-gradient-to-r from-green-600 to-emerald-600' 
@@ -222,6 +252,18 @@ function AppContent() {
                     </button>
                   );
                 })}
+                {isAdmin && (
+                  <button
+                    onClick={() => {
+                      setShowBuildingManagement(true);
+                      setMobileMenuOpen(false);
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-left text-blue-200 hover:text-white hover:bg-blue-700"
+                  >
+                    <UserCog className="h-4 w-4" />
+                    Manage Buildings
+                  </button>
+                )}
               </nav>
             </div>
           )}
@@ -264,46 +306,17 @@ function AppContent() {
 
         {/* Tab Content */}
         {activeTab === 'map' && (
-          <div className="grid lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2">
-              <EmbeddedMap
-                buildings={filteredBuildings}
-                selectedBuilding={selectedBuilding}
-                onBuildingSelect={(building) => {
-                  setSelectedBuilding(building);
-                  setDetailBuilding(building);
-                }}
-                showUserLocation={showUserLocation}
-                userLocation={userLocation}
-              />
-            </div>
-            <div className="space-y-6">
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Quick Stats</h3>
-                <div className="grid grid-cols-2 gap-4 text-center">
-                  <div>
-                    <div className="text-2xl font-bold text-blue-600">{buildings.length}</div>
-                    <div className="text-gray-600 text-sm">Total Buildings</div>
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-green-600">{favorites.length}</div>
-                    <div className="text-gray-600 text-sm">Your Favorites</div>
-                  </div>
-                </div>
-              </div>
-              {selectedBuilding && (
-                <div className="bg-white rounded-xl shadow-lg p-6">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2">Selected Building</h3>
-                  <h4 className="text-xl font-bold text-blue-600">{selectedBuilding.name}</h4>
-                  <p className="text-gray-600 mb-4">{selectedBuilding.description}</p>
-                  <button
-                    onClick={() => setDetailBuilding(selectedBuilding)}
-                    className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    View Details
-                  </button>
-                </div>
-              )}
+          <div className="h-[calc(100vh-12rem)] relative bg-white rounded-xl shadow-lg overflow-hidden">
+            <div className="w-full h-full relative">
+              <ErrorBoundary>
+                <EmbeddedMap
+                  buildings={buildings}
+                  selectedBuilding={null}
+                  onBuildingSelect={setDetailBuilding}
+                  showUserLocation={showUserLocation}
+                  userLocation={null}
+                />
+              </ErrorBoundary>
             </div>
           </div>
         )}
@@ -405,12 +418,4 @@ function AppContent() {
   );
 }
 
-function App() {
-  return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
-  );
-}
-
-export default App;
+export default AppContent;

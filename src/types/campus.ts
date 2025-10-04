@@ -6,21 +6,23 @@ export interface Building {
   description: string;
   hours: string;
   services: string[];
-  coordinates: { x: number; y: number };
+  latitude: number;
+  longitude: number;
   phone?: string;
   email?: string;
   image?: string;
 }
 
-export type BuildingCategory = 
-  | 'academic' 
-  | 'dining' 
-  | 'residential' 
-  | 'recreation' 
-  | 'administrative' 
-  | 'library' 
-  | 'parking' 
-  | 'emergency';
+export enum BuildingCategory {
+  Academic = 'academic',
+  Dining = 'dining',
+  Residential = 'residential',
+  Recreation = 'recreation',
+  Administrative = 'administrative',
+  Library = 'library',
+  Parking = 'parking',
+  Emergency = 'emergency',
+}
 
 export interface CampusService {
   id: string;

@@ -40,8 +40,8 @@ export default function GoogleMap({
 }: GoogleMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [markers, setMarkers] = useState<google.maps.Marker[]>([]);
-  const [userMarker, setUserMarker] = useState<google.maps.Marker | null>(null);
+  const markersRef = useRef<google.maps.Marker[]>([]);
+  const userMarkerRef = useRef<google.maps.Marker | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,8 +49,13 @@ export default function GoogleMap({
   useEffect(() => {
     const initMap = async () => {
       try {
+        const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+        if (!apiKey || apiKey === 'YOUR_GOOGLE_MAPS_API_KEY_HERE') {
+          throw new Error('Missing or invalid Google Maps API key');
+        }
+
         const loader = new Loader({
-          apiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'YOUR_API_KEY_HERE',
+          apiKey,
           version: 'weekly',
           libraries: ['places']
         });
@@ -83,12 +88,12 @@ export default function GoogleMap({
     if (!map) return;
 
     // Clear existing markers
-    markers.forEach(marker => marker.setMap(null));
+    markersRef.current.forEach(marker => marker.setMap(null));
 
     const newMarkers = buildings.map((building) => {
       // Convert building coordinates to lat/lng (adjust these calculations for your campus)
-      const lat = CAMPUS_CENTER.lat + (building.coordinates.y - 250) * 0.0001;
-      const lng = CAMPUS_CENTER.lng + (building.coordinates.x - 300) * 0.0001;
+      const lat = building.latitude;
+      const lng = building.longitude;
 
       const marker = new google.maps.Marker({
         position: { lat, lng },
@@ -131,7 +136,7 @@ export default function GoogleMap({
       return marker;
     });
 
-    setMarkers(newMarkers);
+    markersRef.current = newMarkers;
   }, [map, buildings, selectedBuilding, onBuildingSelect]);
 
   // Handle user location marker
@@ -139,8 +144,8 @@ export default function GoogleMap({
     if (!map) return;
 
     if (showUserLocation && userLocation) {
-      if (userMarker) {
-        userMarker.setMap(null);
+      if (userMarkerRef.current) {
+        userMarkerRef.current.setMap(null);
       }
 
       const newUserMarker = new google.maps.Marker({
@@ -194,16 +199,16 @@ export default function GoogleMap({
         userInfoWindow.open(map, newUserMarker);
       });
 
-      setUserMarker(newUserMarker);
+  userMarkerRef.current = newUserMarker;
 
       // Center map on user location
       map.panTo({
         lat: userLocation.latitude,
         lng: userLocation.longitude
       });
-    } else if (userMarker) {
-      userMarker.setMap(null);
-      setUserMarker(null);
+    } else if (userMarkerRef.current) {
+      userMarkerRef.current.setMap(null);
+      userMarkerRef.current = null;
     }
   }, [map, showUserLocation, userLocation]);
 

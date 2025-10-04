@@ -4,7 +4,29 @@ import react from '@vitejs/plugin-react';
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  optimizeDeps: {
-    exclude: ['lucide-react'],
+  server: {
+    host: '0.0.0.0',
+    port: 3000
   },
+  preview: {
+    port: 3000,
+    host: '0.0.0.0'
+  },
+  build: {
+    sourcemap: true,
+    commonjsOptions: {
+      transformMixedEsModules: true
+    },
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-leaflet': ['react-leaflet'],
+          'leaflet': ['leaflet']
+        }
+      }
+    }
+  },
+  optimizeDeps: {
+    include: ['react-leaflet', 'leaflet']
+  }
 });

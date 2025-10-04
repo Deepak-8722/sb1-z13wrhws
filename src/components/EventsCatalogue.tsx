@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { CampusEvent, EventCategory } from '../types/events';
-import { campusEvents } from '../data/events';
+import { campusEvents, addEvent, updateEvent, deleteEvent } from '../data/events';
 import { Calendar, Clock, MapPin, Users, Tag, X, Filter, Search, Navigation } from 'lucide-react';
 
 interface EventsCatalogueProps {
@@ -35,6 +35,64 @@ export default function EventsCatalogue({ onClose, onGetDirections }: EventsCata
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<EventCategory | 'all'>('all');
   const [selectedEvent, setSelectedEvent] = useState<CampusEvent | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [adminPassword, setAdminPassword] = useState('');
+  const [showEventForm, setShowEventForm] = useState(false);
+  const [eventFormData, setEventFormData] = useState<Partial<CampusEvent>>({
+    category: 'academic',
+    registrationRequired: false,
+    tags: []
+  });
+  const [eventFormMode, setEventFormMode] = useState<'add' | 'edit'>('add');
+  
+  const handleAdminLogin = () => {
+    if (adminPassword === '123456') {
+      setIsAdmin(true);
+      setShowAdminLogin(false);
+      setAdminPassword('');
+    } else {
+      alert('Invalid password');
+    }
+  };
+
+  const handleEventFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newEvent: CampusEvent = {
+      id: eventFormMode === 'add' ? (Math.max(...campusEvents.map(e => Number(e.id))) + 1).toString() : eventFormData.id!,
+      name: eventFormData.name || '',
+      description: eventFormData.description || '',
+      date: eventFormData.date || '',
+      time: eventFormData.time || '',
+      venue: eventFormData.venue || '',
+      category: eventFormData.category as EventCategory,
+      organizer: eventFormData.organizer || '',
+      registrationRequired: eventFormData.registrationRequired || false,
+      capacity: eventFormData.capacity,
+      registeredCount: eventFormData.registeredCount || 0,
+      tags: eventFormData.tags || []
+    };
+
+    if (eventFormMode === 'add') {
+      addEvent(newEvent);
+    } else {
+      updateEvent(newEvent);
+    }
+
+    setShowEventForm(false);
+    setEventFormData({
+      category: 'academic',
+      registrationRequired: false,
+      tags: []
+    });
+  };
+
+  const handleDeleteEvent = (eventId: string) => {
+    if (window.confirm('Are you sure you want to delete this event?')) {
+      deleteEvent(eventId);
+      setSelectedEvent(null);
+    }
+  };
 
   const filteredEvents = useMemo(() => {
     return campusEvents.filter(event => {
@@ -94,47 +152,285 @@ export default function EventsCatalogue({ onClose, onGetDirections }: EventsCata
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-2xl font-bold mb-2">Campus Events</h2>
-              <p className="text-blue-100">Discover what's happening on campus</p>
+              <h2 className="text-2xl font-bold mb-2">Navigate_Malnad</h2>
+              <p className="text-blue-100">Your Campus Guide</p>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-full hover:bg-white hover:bg-opacity-20 transition-colors"
-            >
-              <X className="h-6 w-6" />
-            </button>
+            <div className="flex items-center gap-4">
+              {!isAdmin && (
+                <button
+                  onClick={() => setShowAdminLogin(true)}
+                  className="px-4 py-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg text-sm font-medium transition-colors"
+                >
+                  Admin Login
+                </button>
+              )}
+              {isAdmin && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      setEventFormMode('add');
+                      setShowEventForm(true);
+                    }}
+                    className="px-4 py-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    Add New Event
+                  </button>
+                  <button
+                    onClick={() => setIsAdmin(false)}
+                    className="px-4 py-2 bg-red-500 bg-opacity-20 hover:bg-opacity-30 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    Logout
+                  </button>
+                </div>
+              )}
+              <button
+                onClick={onClose}
+                className="p-2 rounded-full hover:bg-white hover:bg-opacity-20 transition-colors"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Search and Filter */}
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex flex-col lg:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search events, venues, or organizers..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <Filter className="h-5 w-5 text-gray-500" />
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value as EventCategory | 'all')}
-                className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                {categories.map((category) => (
-                  <option key={category.value} value={category.value}>
-                    {category.label}
-                  </option>
-                ))}
-              </select>
+        {/* Admin Login Modal */}
+        {showAdminLogin && (
+          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-70">
+            <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md">
+              <h3 className="text-xl font-bold text-gray-800 mb-4">Admin Login</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    value={adminPassword}
+                    onChange={(e) => setAdminPassword(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter admin password"
+                  />
+                </div>
+                <div className="flex justify-end space-x-3">
+                  <button
+                    onClick={() => setShowAdminLogin(false)}
+                    className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleAdminLogin}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    Login
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        )}
+
+        {/* Event Form Modal */}
+        {showEventForm && (
+          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-70 overflow-y-auto">
+            <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-2xl my-4">
+              <h3 className="text-xl font-bold text-gray-800 mb-4">
+                {eventFormMode === 'add' ? 'Add New Event' : 'Edit Event'}
+              </h3>
+              <form onSubmit={handleEventFormSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Event Name*
+                    </label>
+                    <input
+                      type="text"
+                      value={eventFormData.name || ''}
+                      onChange={(e) => setEventFormData({...eventFormData, name: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Category*
+                    </label>
+                    <select
+                      value={eventFormData.category}
+                      onChange={(e) => setEventFormData({...eventFormData, category: e.target.value as EventCategory})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      required
+                    >
+                      {categories.filter(cat => cat.value !== 'all').map((cat) => (
+                        <option key={cat.value} value={cat.value}>
+                          {cat.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Description*
+                    </label>
+                    <textarea
+                      value={eventFormData.description || ''}
+                      onChange={(e) => setEventFormData({...eventFormData, description: e.target.value})}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 resize-y"
+                      required
+                      style={{ minHeight: "80px", maxHeight: "200px" }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Date*
+                    </label>
+                    <input
+                      type="date"
+                      value={eventFormData.date || ''}
+                      onChange={(e) => setEventFormData({...eventFormData, date: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Time*
+                    </label>
+                    <input
+                      type="text"
+                      value={eventFormData.time || ''}
+                      onChange={(e) => setEventFormData({...eventFormData, time: e.target.value})}
+                      placeholder="e.g., 2:00 PM - 4:00 PM"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Venue*
+                    </label>
+                    <input
+                      type="text"
+                      value={eventFormData.venue || ''}
+                      onChange={(e) => setEventFormData({...eventFormData, venue: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Organizer*
+                    </label>
+                    <input
+                      type="text"
+                      value={eventFormData.organizer || ''}
+                      onChange={(e) => setEventFormData({...eventFormData, organizer: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="flex items-center space-x-2 mb-1">
+                      <input
+                        type="checkbox"
+                        checked={eventFormData.registrationRequired || false}
+                        onChange={(e) => setEventFormData({...eventFormData, registrationRequired: e.target.checked})}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm font-medium text-gray-700">Registration Required</span>
+                    </label>
+                  </div>
+                  {eventFormData.registrationRequired && (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Capacity
+                        </label>
+                        <input
+                          type="number"
+                          value={eventFormData.capacity || ''}
+                          onChange={(e) => setEventFormData({...eventFormData, capacity: Number(e.target.value)})}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Registered Count
+                        </label>
+                        <input
+                          type="number"
+                          value={eventFormData.registeredCount || ''}
+                          onChange={(e) => setEventFormData({...eventFormData, registeredCount: Number(e.target.value)})}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </>
+                  )}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Tags (comma-separated)
+                    </label>
+                    <input
+                      type="text"
+                      value={(eventFormData.tags || []).join(', ')}
+                      onChange={(e) => setEventFormData({...eventFormData, tags: e.target.value.split(',').map(tag => tag.trim()).filter(Boolean)})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      placeholder="e.g., workshop, technology, career"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end space-x-3 pt-4 border-t">
+                  <button
+                    type="button"
+                    onClick={() => setShowEventForm(false)}
+                    className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    {eventFormMode === 'add' ? 'Add Event' : 'Save Changes'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Search and Filter */}
+        {!isAdmin && !showAdminLogin && (
+          <div className="p-4 border-b border-gray-200">
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex-grow min-w-[200px] relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search events..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="flex-grow min-w-[150px] relative">
+                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value as EventCategory | 'all')}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {categories.map((category) => (
+                    <option key={category.value} value={category.value}>
+                      {category.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Events Grid */}
         <div className="flex-1 overflow-y-auto p-6">
@@ -149,10 +445,10 @@ export default function EventsCatalogue({ onClose, onGetDirections }: EventsCata
               {filteredEvents.map((event) => (
                 <div
                   key={event.id}
-                  className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer group overflow-hidden"
+                  className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer group overflow-hidden flex flex-col"
                   onClick={() => setSelectedEvent(event)}
                 >
-                  <div className="p-6">
+                  <div className="p-6 flex-grow">
                     <div className="flex justify-between items-start mb-3">
                       <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium border ${categoryColors[event.category]}`}>
                         {event.category.charAt(0).toUpperCase() + event.category.slice(1)}
@@ -234,7 +530,7 @@ export default function EventsCatalogue({ onClose, onGetDirections }: EventsCata
         </div>
       </div>
 
-      {/* Event Detail Modal */}
+              {/* Event Detail Modal */}
       {selectedEvent && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-60">
           <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -247,16 +543,37 @@ export default function EventsCatalogue({ onClose, onGetDirections }: EventsCata
                   <h2 className="text-2xl font-bold text-gray-800 mb-2">{selectedEvent.name}</h2>
                   <p className="text-gray-600">Organized by {selectedEvent.organizer}</p>
                 </div>
-                <button
-                  onClick={() => setSelectedEvent(null)}
-                  className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-                >
-                  <X className="h-6 w-6" />
-                </button>
+                <div className="flex items-center gap-2">
+                  {isAdmin && (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          setEventFormMode('edit');
+                          setEventFormData(selectedEvent);
+                          setShowEventForm(true);
+                          setSelectedEvent(null);
+                        }}
+                        className="p-2 rounded-lg hover:bg-gray-100 transition-colors text-blue-600"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteEvent(selectedEvent.id)}
+                        className="p-2 rounded-lg hover:bg-gray-100 transition-colors text-red-600"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  )}
+                  <button
+                    onClick={() => setSelectedEvent(null)}
+                    className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
               </div>
-            </div>
-            
-            <div className="p-6 space-y-6">
+            </div>            <div className="p-6 space-y-6">
               <div>
                 <h3 className="text-lg font-semibold text-gray-800 mb-2">Description</h3>
                 <p className="text-gray-700 leading-relaxed">{selectedEvent.description}</p>
@@ -344,13 +661,13 @@ export default function EventsCatalogue({ onClose, onGetDirections }: EventsCata
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => handleGetDirections(selectedEvent.venue)}
-                    className="flex items-center justify-center gap-2 py-3 px-6 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                    className="flex items-center justify-center gap-2 py-2 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
                   >
                     <Navigation className="h-5 w-5" />
                     Get Directions
                   </button>
                   <button 
-                    className={`py-3 px-6 rounded-lg font-medium transition-colors ${
+                    className={`py-2 px-4 rounded-lg font-medium transition-colors ${
                       selectedEvent.registrationRequired && getRegistrationStatus(selectedEvent) === 'Full'
                         ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                         : 'bg-blue-600 text-white hover:bg-blue-700'
