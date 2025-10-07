@@ -18,7 +18,7 @@ export const MyLocationButton: React.FC<MyLocationButtonProps> = ({
       disabled={!userLocation || isLoading}
       className={`fixed top-1/2 right-6 transform -translate-y-1/2 z-[1000] w-12 h-12 rounded-full shadow-lg transition-all duration-200 ${
         userLocation && !isLoading
-          ? 'bg-white text-blue-600 hover:bg-blue-50 hover:shadow-xl'
+          ? 'bg-green-600 text-white hover:bg-green-700 hover:shadow-xl'
           : 'bg-gray-100 text-gray-400 cursor-not-allowed'
       }`}
       title={isLoading ? 'Finding your location...' : (userLocation ? 'Go to my location' : 'Location not available')}

@@ -3,7 +3,7 @@ import { Building, BuildingCategory } from './types/campus';
 import { buildings } from './data/buildings';
 import { useFavorites } from './hooks/useFavorites';
 import SearchBar from './components/SearchBar';
-import EmbeddedMap from './components/EmbeddedMap';
+
 import BuildingCard from './components/BuildingCard';
 import BuildingDetail from './components/BuildingDetail';
 import EmergencyServices from './components/EmergencyServices';
@@ -15,6 +15,8 @@ import { useAuth } from './contexts/AuthContext';
 import AdminLogin from './components/AdminLogin';
 import BuildingManagement from './components/BuildingManagement';
 import ProtectedRoute from './components/ProtectedRoute';
+import MapSelector from './components/MapSelector';
+import MapWrapper from './components/MapWrapper';
 
 function AppContent() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -28,6 +30,7 @@ function AppContent() {
   const [geolocationError, setGeolocationError] = useState<string | null>(null);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [showBuildingManagement, setShowBuildingManagement] = useState(false);
+  const [currentMapType, setCurrentMapType] = useState<'google' | 'leaflet'>('google');
   
   const { favorites, toggleFavorite, isFavorite } = useFavorites();
   const { isAdmin } = useAuth();
@@ -142,25 +145,27 @@ function AppContent() {
 
       {/* Location and Events Buttons - moved up and to right middle */}
       <div className="fixed top-24 right-6 flex flex-col gap-3 z-40">
-        <button
-          onClick={() => {
-            if (geolocationError) {
-              alert(geolocationError);
-              return;
-            }
-            setShowUserLocation(!showUserLocation);
-          }}
-          className={`w-14 h-14 ${
-            showUserLocation 
-              ? 'bg-gradient-to-r from-green-600 to-emerald-600' 
-              : 'bg-gradient-to-r from-gray-600 to-gray-700'
-          } text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group hover:scale-110 ${
-            showUserLocation ? 'animate-pulse' : ''
-          }`}
-          title={showUserLocation ? 'Hide My Location' : 'Show My Location'}
-        >
-          <Locate className="h-6 w-6" />
-        </button>
+        {currentMapType === 'google' && (
+          <button
+            onClick={() => {
+              if (geolocationError) {
+                alert(geolocationError);
+                return;
+              }
+              setShowUserLocation(!showUserLocation);
+            }}
+            className={`w-14 h-14 ${
+              showUserLocation 
+                ? 'bg-gradient-to-r from-green-600 to-emerald-600' 
+                : 'bg-gradient-to-r from-gray-600 to-gray-700'
+            } text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group hover:scale-110 ${
+              showUserLocation ? 'animate-pulse' : ''
+            }`}
+            title={showUserLocation ? 'Hide My Location' : 'Show My Location'}
+          >
+            <Locate className="h-6 w-6" />
+          </button>
+        )}
         <button
           onClick={() => setShowEvents(true)}
           className="w-14 h-14 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group hover:scale-110"
@@ -307,14 +312,18 @@ function AppContent() {
         {/* Tab Content */}
         {activeTab === 'map' && (
           <div className="h-[calc(100vh-12rem)] relative bg-white rounded-xl shadow-lg overflow-hidden">
+            <div className="absolute top-4 right-4 z-50">
+              <MapSelector currentMapType={currentMapType} onMapTypeChange={setCurrentMapType} />
+            </div>
             <div className="w-full h-full relative">
               <ErrorBoundary>
-                <EmbeddedMap
+                <MapWrapper
                   buildings={buildings}
                   selectedBuilding={null}
                   onBuildingSelect={setDetailBuilding}
                   showUserLocation={showUserLocation}
                   userLocation={null}
+                  mapType={currentMapType}
                 />
               </ErrorBoundary>
             </div>
