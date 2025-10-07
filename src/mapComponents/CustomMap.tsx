@@ -91,7 +91,7 @@ export const CustomMap: React.FC = () => {
   const [routeWaypoints, setRouteWaypoints] = useState<[number, number][]>([]);
   
   const mapRef = useRef<L.Map>(null);
-  const { location: userLocation } = useGeolocation();
+  const { location: userLocation, loading: userLocationLoading } = useGeolocation();
 
   // Update user location in state
   React.useEffect(() => {
@@ -349,6 +349,7 @@ export const CustomMap: React.FC = () => {
       <MyLocationButton
         userLocation={userLocation}
         onGoToCurrentLocation={handleGoToCurrentLocation}
+        isLoading={userLocationLoading}
       />
 
       {/* Navigation Panel */}
