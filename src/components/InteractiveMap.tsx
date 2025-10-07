@@ -37,7 +37,7 @@ function MapEvents({ selectedBuilding, userLocation }: {
   return null;
 }
 
-export function MapComponent({ 
+export default function MapComponent({ 
   buildings, 
   selectedBuilding, 
   onBuildingSelect,

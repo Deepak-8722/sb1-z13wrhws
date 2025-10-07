@@ -8,7 +8,8 @@ import BuildingDetail from './components/BuildingDetail';
 import EmergencyServices from './components/EmergencyServices';
 import EventsCatalogue from './components/EventsCatalogue';
 import ChatBot from './components/ChatBot';
-import EmbeddedMap from './components/EmbeddedMap';
+import MapWrapper from './components/MapWrapper';
+import MapSelector from './components/MapSelector';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import AdminLogin from './components/AdminLogin';
 import BuildingManagement from './components/BuildingManagement';
@@ -28,6 +29,7 @@ function AppContent() {
   const [showBuildingManagement, setShowBuildingManagement] = useState(false);
   const [showUserLocation, setShowUserLocation] = useState(false);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [mapType, setMapType] = useState<'google' | 'leaflet'>('google');
 
   
   const { favorites, toggleFavorite, isFavorite } = useFavorites();
@@ -161,7 +163,7 @@ function AppContent() {
             </button>
 
             {/* Desktop navigation */}
-            <nav className="hidden md:flex space-x-4">
+            <nav className="hidden md:flex space-x-4 items-center">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 return (
@@ -179,6 +181,10 @@ function AppContent() {
                   </button>
                 );
               })}
+              <MapSelector
+                currentMapType={mapType}
+                onMapTypeChange={setMapType}
+              />
               <button
                 onClick={() => setShowAdminLogin(true)}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-blue-200 hover:text-white hover:bg-blue-700"
@@ -266,15 +272,16 @@ function AppContent() {
         {activeTab === 'map' && (
           <div className="grid lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
-              <EmbeddedMap
+              <MapWrapper
                 buildings={filteredBuildings}
                 selectedBuilding={selectedBuilding}
-                onBuildingSelect={(building) => {
+                onBuildingSelect={(building: Building) => {
                   setSelectedBuilding(building);
                   setDetailBuilding(building);
                 }}
                 showUserLocation={showUserLocation}
                 userLocation={userLocation}
+                mapType={mapType}
               />
             </div>
             <div className="space-y-6">
